@@ -13,9 +13,36 @@ using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 0. Cloud Port binding (Render, Railway, Heroku)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5005";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // 1. PostgreSQL ma'lumotlar bazasini ro'yxatdan o'tkazish
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var envDbUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+
+if (!string.IsNullOrWhiteSpace(envDbUrl))
+{
+    try
+    {
+        var databaseUri = new Uri(envDbUrl);
+        var userInfo = databaseUri.UserInfo.Split(':');
+        var user = userInfo.Length > 0 ? userInfo[0] : "";
+        var pass = userInfo.Length > 1 ? userInfo[1] : "";
+        var dbName = databaseUri.AbsolutePath.TrimStart('/');
+        var dbHost = databaseUri.Host;
+        var dbPort = databaseUri.Port > 0 ? databaseUri.Port : 5432;
+
+        connectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username={user};Password={pass};SSL Mode=Require;Trust Server Certificate=true;";
+    }
+    catch
+    {
+        // Fallback to default connection string if parse fails
+    }
+}
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // ====== DI (Dependency Injection) QISMI ======
 // Generic Repository-ni ro'yxatdan o'tkazish
@@ -36,6 +63,17 @@ builder.Services.AddScoped<ICertificateService, CertificateService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 // ============================================
+
+// CORS sozlamasi (GitHub Pages va boshqa manbalardan so'rovlarni qabul qilish uchun)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // 2. JWT Authentication va Authorization sozlamalari
 builder.Services.AddAuthentication(options =>
@@ -245,7 +283,7 @@ using (var scope = app.Services.CreateScope())
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 app.UseAuthentication(); // ⬅️ JWT authentication check
 app.UseAuthorization();
 app.MapControllers();
