@@ -36,7 +36,7 @@ public class AuthController : ControllerBase
         {
             FullName = dto.FullName,
             Email = dto.Email,
-            Role = Enum.TryParse<UserRole>(dto.Role, true, out var r) ? r : UserRole.Student
+            Role = UserRole.Student
         };
         user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
 

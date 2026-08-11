@@ -15,6 +15,6 @@ RUN dotnet publish "TestPlatform.WebApi.csproj" -c Release -o /app/publish /p:Us
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-ENV PORT=5005
+ENV ASPNETCORE_URLS=http://+:5005
 EXPOSE 5005
 ENTRYPOINT ["dotnet", "TestPlatform.WebApi.dll"]

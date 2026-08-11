@@ -1,0 +1,64 @@
+name: TestPlatform CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    name: Build & Test (.NET 10)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore TestPlatform/TestPlatform.WebApi.csproj
+
+      - name: Build Project
+        run: dotnet build TestPlatform/TestPlatform.WebApi.csproj --configuration Release --no-restore
+
+  docker-build:
+    name: Build Docker Image
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Test Docker Build
+        run: docker build -t testplatform:latest .
+
+  # Auto-deploy to Contabo VPS (Optional via GitHub Secrets)
+  # To enable, uncomment below and set secrets in GitHub Repo Settings -> Secrets and variables -> Actions:
+  # VPS_HOST, VPS_USERNAME, VPS_SSH_KEY
+  #
+  # deploy-to-vps:
+  #   name: Deploy to Contabo VPS
+  #   needs: docker-build
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Execute Remote SSH Commands
+  #       uses: appleboy/ssh-action@v1.0.3
+  #       with:
+  #         host: ${{ secrets.VPS_HOST }}
+  #         username: ${{ secrets.VPS_USERNAME }}
+  #         key: ${{ secrets.VPS_SSH_KEY }}
+  #         script: |
+  #           cd /root/testplatform || git clone https://github.com/${{ github.repository }}.git /root/testplatform
+  #           cd /root/testplatform
+  #           git pull origin main
+  #           docker compose up -d --build

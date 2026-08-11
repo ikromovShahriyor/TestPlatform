@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: testplatform-db
+    restart: always
+    environment:
+      POSTGRES_DB: TestPlatformDb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: SecretPassword123!
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d TestPlatformDb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  webapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: testplatform-api
+    restart: always
+    ports:
+      - "5005:5005"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5005
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=TestPlatformDb;Username=postgres;Password=SecretPassword123!
+      - Jwt__Key=SuperSecretKeyForTestPlatformAppWithAtLeast256BitsLongKeySecurity!
+      - Jwt__Issuer=TestPlatformIssuer
+      - Jwt__Audience=TestPlatformAudience
+      - Jwt__ExpireInMinutes=1440
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
