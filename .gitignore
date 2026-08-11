@@ -1,0 +1,34 @@
+## Ignore Visual Studio, .NET build outputs and temporary files
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][InN]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Ob]j/
+[Lg]og/
+[Lg]ogs/
+
+# Visual Studio files
+.vs/
+.idea/
+.vscode/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.tmp
+*.log

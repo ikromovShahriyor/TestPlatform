@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="TeastPlatform.Domain/TeastPlatform.Domain.csproj" />
+  <Project Path="TestPlatform.Data/TestPlatform.Data.csproj" />
+  <Project Path="TestPlatform.Service/TestPlatform.Service.csproj" />
+  <Project Path="TestPlatform/TestPlatform.WebApi.csproj" />
+</Solution>
