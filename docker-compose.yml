@@ -1,7 +1,6 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: testplatform-db
     restart: always
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-TestPlatformDb}
@@ -25,7 +24,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: testplatform-api
     restart: always
     ports:
       # Standard web port 80 & 8080 on VPS host mapped to 5005 inside container
