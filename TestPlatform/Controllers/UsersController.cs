@@ -28,45 +28,64 @@ public class UsersController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
     {
-        if (page < 1) page = 1;
-        if (pageSize < 1 || pageSize > 100) pageSize = 10;
-
-        var query = _context.Users.AsNoTracking().AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(search))
+        try
         {
-            var cleanSearch = search.Trim().ToLower();
-            query = query.Where(u => u.FullName.ToLower().Contains(cleanSearch) || u.Email.ToLower().Contains(cleanSearch));
-        }
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-        var totalCount = await query.CountAsync();
-        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            var query = _context.Users.AsNoTracking().AsQueryable();
 
-        var users = await query
-            .OrderByDescending(u => u.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(u => new
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var cleanSearch = search.Trim().ToLower();
+                query = query.Where(u => (u.FullName != null && u.FullName.ToLower().Contains(cleanSearch)) || (u.Email != null && u.Email.ToLower().Contains(cleanSearch)));
+            }
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            var rawUsers = await query
+                .OrderByDescending(u => u.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.FullName,
+                    u.Email,
+                    u.Role,
+                    u.AvatarUrl,
+                    u.IsEmailVerified,
+                    u.CreatedAt,
+                    AttemptsCount = _context.TestAttempts.Count(a => a.UserId == u.Id)
+                })
+                .ToListAsync();
+
+            var users = rawUsers.Select(u => new
             {
                 u.Id,
-                u.FullName,
-                u.Email,
+                FullName = u.FullName ?? u.Email ?? "Foydalanuvchi",
+                Email = u.Email ?? "",
                 Role = u.Role.ToString(),
                 u.AvatarUrl,
                 u.IsEmailVerified,
                 u.CreatedAt,
-                AttemptsCount = _context.TestAttempts.Count(a => a.UserId == u.Id)
-            })
-            .ToListAsync();
+                u.AttemptsCount
+            }).ToList();
 
-        return Ok(new
+            return Ok(new
+            {
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = totalPages,
+                Items = users
+            });
+        }
+        catch (Exception ex)
         {
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount,
-            TotalPages = totalPages,
-            Items = users
-        });
+            return StatusCode(500, new { message = $"Foydalanuvchilarni yuklashda server xatoligi: {ex.Message}" });
+        }
     }
 
     [HttpDelete("{id:guid}")]

@@ -57,10 +57,21 @@ public static class DbSeeder
             Console.WriteLine($"[Seed Users Warning] {ex.Message}");
         }
 
-        // 2. Seed Subjects, Topics, Tests, and Questions if no tests exist yet
+        // 2. Seed Subjects, Topics, Tests, and Questions
         try
         {
-            if (await dbContext.Tests.AnyAsync(t => t.Questions.Count >= 20))
+            // Always ensure all tests in the database are set to IsPublished = true
+            var unpublishedTests = await dbContext.Tests.Where(t => !t.IsPublished).ToListAsync();
+            if (unpublishedTests.Any())
+            {
+                foreach (var ut in unpublishedTests)
+                {
+                    ut.IsPublished = true;
+                }
+                await dbContext.SaveChangesAsync();
+            }
+
+            if (await dbContext.Tests.AnyAsync(t => t.Title.Contains("Sertifikat Imtihoni")))
             {
                 return; // Data already seeded
             }
