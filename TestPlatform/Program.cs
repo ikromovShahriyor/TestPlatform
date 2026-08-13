@@ -128,43 +128,71 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"[Migration Notice] {ex.Message}");
     }
 
-    // Direct check: Users jadvali mavjudligini tekshirish. Agar yo'q bo'lsa majburiy yaratish!
-    try
-    {
-        await dbContext.Database.ExecuteSqlRawAsync(@"SELECT 1 FROM ""Users"" LIMIT 1;");
-    }
-    catch
-    {
-        try
-        {
-            var createScript = dbContext.Database.GenerateCreateScript();
-            await dbContext.Database.ExecuteSqlRawAsync(createScript);
-            Console.WriteLine("[Database] Barcha jadvallar GenerateCreateScript orqali yaratildi!");
-        }
-        catch (Exception scriptEx)
-        {
-            Console.WriteLine($"[GenerateCreateScript Notice] {scriptEx.Message}");
-            try
-            {
-                var creator = dbContext.Database.GetService<IRelationalDatabaseCreator>();
-                if (creator != null)
-                {
-                    await creator.CreateTablesAsync();
-                }
-            }
-            catch { }
-        }
-    }
-
-    // Ensure new columns exist on Users table if missing
+    // Guarantee all missing tables (Users, Topics, TestTopics, Certificates, AuditLogs) exist in PostgreSQL
     try
     {
         await dbContext.Database.ExecuteSqlRawAsync(@"
+            CREATE TABLE IF NOT EXISTS ""Users"" (
+                ""Id"" uuid NOT NULL CONSTRAINT ""PK_Users"" PRIMARY KEY,
+                ""FullName"" character varying(100) NOT NULL,
+                ""Email"" character varying(100) NOT NULL,
+                ""PasswordHash"" character varying(255) NOT NULL,
+                ""Role"" text NOT NULL,
+                ""AvatarUrl"" text NULL,
+                ""IsEmailVerified"" boolean NOT NULL DEFAULT FALSE,
+                ""CreatedAt"" timestamp with time zone NOT NULL,
+                ""UpdatedAt"" timestamp with time zone NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Users_Email"" ON ""Users"" (""Email"");
+
+            CREATE TABLE IF NOT EXISTS ""Topics"" (
+                ""Id"" uuid NOT NULL CONSTRAINT ""PK_Topics"" PRIMARY KEY,
+                ""Name"" character varying(100) NOT NULL,
+                ""Description"" character varying(500) NULL,
+                ""CreatedAt"" timestamp with time zone NOT NULL,
+                ""UpdatedAt"" timestamp with time zone NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS ""TestTopics"" (
+                ""Id"" uuid NOT NULL CONSTRAINT ""PK_TestTopics"" PRIMARY KEY,
+                ""TestId"" uuid NOT NULL,
+                ""TopicId"" uuid NOT NULL,
+                ""CreatedAt"" timestamp with time zone NOT NULL,
+                ""UpdatedAt"" timestamp with time zone NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS ""Certificates"" (
+                ""Id"" uuid NOT NULL CONSTRAINT ""PK_Certificates"" PRIMARY KEY,
+                ""CertificateNumber"" text NOT NULL,
+                ""StudentName"" text NOT NULL,
+                ""TestTitle"" text NOT NULL,
+                ""ScorePercentage"" double precision NOT NULL,
+                ""IssuedAt"" timestamp with time zone NOT NULL,
+                ""AttemptId"" uuid NOT NULL,
+                ""CreatedAt"" timestamp with time zone NOT NULL,
+                ""UpdatedAt"" timestamp with time zone NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS ""AuditLogs"" (
+                ""Id"" uuid NOT NULL CONSTRAINT ""PK_AuditLogs"" PRIMARY KEY,
+                ""UserId"" uuid NULL,
+                ""UserEmail"" text NULL,
+                ""Action"" text NOT NULL,
+                ""EntityName"" text NOT NULL,
+                ""EntityId"" text NULL,
+                ""Details"" text NULL,
+                ""IpAddress"" text NULL,
+                ""Timestamp"" timestamp with time zone NOT NULL
+            );
+
             ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""AvatarUrl"" text NULL;
             ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""IsEmailVerified"" boolean NOT NULL DEFAULT FALSE;
         ");
     }
-    catch { }
+    catch (Exception exSql)
+    {
+        Console.WriteLine($"[Table Guarantee Notice] {exSql.Message}");
+    }
 
     // Default Admin foydalanuvchini seed qilish
     try
