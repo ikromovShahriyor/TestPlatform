@@ -26,8 +26,8 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      # Port 9090 on VPS host mapped to 5005 inside container
-      - "${WEBAPI_PORT:-9090}:5005"
+      # User requested port 2011 on VPS host mapped to 5005 inside container
+      - "${WEBAPI_PORT:-2011}:5005"
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
       - ASPNETCORE_URLS=http://+:5005
