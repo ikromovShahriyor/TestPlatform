@@ -179,139 +179,146 @@ using (var scope = app.Services.CreateScope())
     }
 
     // Default fanlar, topiclar va testlarni seed qilish
-    if (!dbContext.Subjects.Any())
+    try
     {
-        var subj1 = new Subject { Name = "Dasturlash (C# & .NET)", Description = "C# dasturlash tili va .NET framework asoslari" };
-        var subj2 = new Subject { Name = "Matematika va Algoritmlar", Description = "Oliy matematika va algoritmlar bo'yicha imtihonlar" };
-        var subj3 = new Subject { Name = "Ingliz Tili (IELTS Level)", Description = "English Grammar and General Knowledge" };
-
-        dbContext.Subjects.AddRange(subj1, subj2, subj3);
-
-        var topic1 = new Topic { Name = "OOP & SOLID" };
-        var topic2 = new Topic { Name = "LINQ & EF Core" };
-        var topic3 = new Topic { Name = "Integral va Hosila" };
-        var topic4 = new Topic { Name = "Grammar & Vocabulary" };
-
-        dbContext.Topics.AddRange(topic1, topic2, topic3, topic4);
-        await dbContext.SaveChangesAsync();
-
-        // 1-Test
-        var test1 = new Test
+        if (!dbContext.Subjects.Any())
         {
-            SubjectId = subj1.Id,
-            Title = "C# & .NET Core Asoslari Testi",
-            Description = "C# tili, OOP tamoyillari va LINQ bo'yicha bilimingizni sinab ko'ring.",
-            PassingPercentage = 60,
-            DurationMinutes = 15,
-            TimeLimitMinutes = 15,
-            IsPublished = true,
-            Difficulty = DifficultyLevel.Easy,
-            MaxAttemptsPerStudent = 5,
-            ShowReviewAfterSubmit = true,
-            Questions = new List<Question>
+            var subj1 = new Subject { Name = "Dasturlash (C# & .NET)", Description = "C# dasturlash tili va .NET framework asoslari" };
+            var subj2 = new Subject { Name = "Matematika va Algoritmlar", Description = "Oliy matematika va algoritmlar bo'yicha imtihonlar" };
+            var subj3 = new Subject { Name = "Ingliz Tili (IELTS Level)", Description = "English Grammar and General Knowledge" };
+
+            dbContext.Subjects.AddRange(subj1, subj2, subj3);
+
+            var topic1 = new Topic { Name = "OOP & SOLID" };
+            var topic2 = new Topic { Name = "LINQ & EF Core" };
+            var topic3 = new Topic { Name = "Integral va Hosila" };
+            var topic4 = new Topic { Name = "Grammar & Vocabulary" };
+
+            dbContext.Topics.AddRange(topic1, topic2, topic3, topic4);
+            await dbContext.SaveChangesAsync();
+
+            // 1-Test
+            var test1 = new Test
             {
-                new Question
+                SubjectId = subj1.Id,
+                Title = "C# & .NET Core Asoslari Testi",
+                Description = "C# tili, OOP tamoyillari va LINQ bo'yicha bilimingizni sinab ko'ring.",
+                PassingPercentage = 60,
+                DurationMinutes = 15,
+                TimeLimitMinutes = 15,
+                IsPublished = true,
+                Difficulty = DifficultyLevel.Easy,
+                MaxAttemptsPerStudent = 5,
+                ShowReviewAfterSubmit = true,
+                Questions = new List<Question>
                 {
-                    Text = "C# tilida obyektga yo'naltirilgan dasturlashning (OOP) asosiy 4 ta ustunidan biri qaysi?",
-                    Points = 10,
-                    Options = new List<AnswerOption>
+                    new Question
                     {
-                        new AnswerOption { Text = "Inkapsulyatsiya (Encapsulation)", IsCorrect = true },
-                        new AnswerOption { Text = "Kompilyatsiya (Compilation)", IsCorrect = false },
-                        new AnswerOption { Text = "Garbage Collection", IsCorrect = false },
-                        new AnswerOption { Text = "Multithreading", IsCorrect = false }
-                    }
-                },
-                new Question
-                {
-                    Text = "LINQ'da ro'yxatni saralash uchun qaysi metod ishlatiladi?",
-                    Points = 10,
-                    Options = new List<AnswerOption>
+                        Text = "C# tilida obyektga yo'naltirilgan dasturlashning (OOP) asosiy 4 ta ustunidan biri qaysi?",
+                        Points = 10,
+                        Options = new List<AnswerOption>
+                        {
+                            new AnswerOption { Text = "Inkapsulyatsiya (Encapsulation)", IsCorrect = true },
+                            new AnswerOption { Text = "Kompilyatsiya (Compilation)", IsCorrect = false },
+                            new AnswerOption { Text = "Garbage Collection", IsCorrect = false },
+                            new AnswerOption { Text = "Multithreading", IsCorrect = false }
+                        }
+                    },
+                    new Question
                     {
-                        new AnswerOption { Text = "OrderBy()", IsCorrect = true },
-                        new AnswerOption { Text = "SortList()", IsCorrect = false },
-                        new AnswerOption { Text = "Group()", IsCorrect = false },
-                        new AnswerOption { Text = "Filter()", IsCorrect = false }
-                    }
-                },
-                new Question
-                {
-                    Text = ".NET run-time muhitining nomi nima?",
-                    Points = 10,
-                    Options = new List<AnswerOption>
+                        Text = "LINQ'da ro'yxatni saralash uchun qaysi metod ishlatiladi?",
+                        Points = 10,
+                        Options = new List<AnswerOption>
+                        {
+                            new AnswerOption { Text = "OrderBy()", IsCorrect = true },
+                            new AnswerOption { Text = "SortList()", IsCorrect = false },
+                            new AnswerOption { Text = "Group()", IsCorrect = false },
+                            new AnswerOption { Text = "Filter()", IsCorrect = false }
+                        }
+                    },
+                    new Question
                     {
-                        new AnswerOption { Text = "CLR (Common Language Runtime)", IsCorrect = true },
-                        new AnswerOption { Text = "JVM (Java Virtual Machine)", IsCorrect = false },
-                        new AnswerOption { Text = "SDK (Software Dev Kit)", IsCorrect = false },
-                        new AnswerOption { Text = "Kestrel Server", IsCorrect = false }
-                    }
-                },
-                new Question
-                {
-                    Text = "Interface va Abstract Class o'rtasidagi asosiy farq nimada?",
-                    Points = 10,
-                    Options = new List<AnswerOption>
+                        Text = ".NET run-time muhitining nomi nima?",
+                        Points = 10,
+                        Options = new List<AnswerOption>
+                        {
+                            new AnswerOption { Text = "CLR (Common Language Runtime)", IsCorrect = true },
+                            new AnswerOption { Text = "JVM (Java Virtual Machine)", IsCorrect = false },
+                            new AnswerOption { Text = "SDK (Software Dev Kit)", IsCorrect = false },
+                            new AnswerOption { Text = "Kestrel Server", IsCorrect = false }
+                        }
+                    },
+                    new Question
                     {
-                        new AnswerOption { Text = "Interface ko'p karrali merosxo'rlikni qo'llab-quvvatlaydi", IsCorrect = true },
-                        new AnswerOption { Text = "Interface constructorga ega bo'lishi shart", IsCorrect = false },
-                        new AnswerOption { Text = "Abstract Class private metodlarga ega bo'la olmaydi", IsCorrect = false },
-                        new AnswerOption { Text = "Hech qanday farq yo'q", IsCorrect = false }
+                        Text = "Interface va Abstract Class o'rtasidagi asosiy farq nimada?",
+                        Points = 10,
+                        Options = new List<AnswerOption>
+                        {
+                            new AnswerOption { Text = "Interface ko'p karrali merosxo'rlikni qo'llab-quvvatlaydi", IsCorrect = true },
+                            new AnswerOption { Text = "Interface constructorga ega bo'lishi shart", IsCorrect = false },
+                            new AnswerOption { Text = "Abstract Class private metodlarga ega bo'la olmaydi", IsCorrect = false },
+                            new AnswerOption { Text = "Hech qanday farq yo'q", IsCorrect = false }
+                        }
                     }
                 }
-            }
-        };
+            };
 
-        // 2-Test
-        var test2 = new Test
-        {
-            SubjectId = subj2.Id,
-            Title = "Matematik Analiz va Tenglamalar",
-            Description = "Oliy matematika, hosila va integral masalalari.",
-            PassingPercentage = 70,
-            DurationMinutes = 20,
-            TimeLimitMinutes = 20,
-            IsPublished = true,
-            Difficulty = DifficultyLevel.Medium,
-            MaxAttemptsPerStudent = 3,
-            ShowReviewAfterSubmit = true,
-            Questions = new List<Question>
+            // 2-Test
+            var test2 = new Test
             {
-                new Question
+                SubjectId = subj2.Id,
+                Title = "Matematik Analiz va Tenglamalar",
+                Description = "Oliy matematika, hosila va integral masalalari.",
+                PassingPercentage = 70,
+                DurationMinutes = 20,
+                TimeLimitMinutes = 20,
+                IsPublished = true,
+                Difficulty = DifficultyLevel.Medium,
+                MaxAttemptsPerStudent = 3,
+                ShowReviewAfterSubmit = true,
+                Questions = new List<Question>
                 {
-                    Text = "f(x) = x^2 funksiyaning hosilasi (derivative) nimaga teng?",
-                    Points = 10,
-                    Options = new List<AnswerOption>
+                    new Question
                     {
-                        new AnswerOption { Text = "2x", IsCorrect = true },
-                        new AnswerOption { Text = "x", IsCorrect = false },
-                        new AnswerOption { Text = "x^3 / 3", IsCorrect = false },
-                        new AnswerOption { Text = "2", IsCorrect = false }
-                    }
-                },
-                new Question
-                {
-                    Text = "sin^2(x) + cos^2(x) ning qiymati nechaga teng?",
-                    Points = 10,
-                    Options = new List<AnswerOption>
+                        Text = "f(x) = x^2 funksiyaning hosilasi (derivative) nimaga teng?",
+                        Points = 10,
+                        Options = new List<AnswerOption>
+                        {
+                            new AnswerOption { Text = "2x", IsCorrect = true },
+                            new AnswerOption { Text = "x", IsCorrect = false },
+                            new AnswerOption { Text = "x^3 / 3", IsCorrect = false },
+                            new AnswerOption { Text = "2", IsCorrect = false }
+                        }
+                    },
+                    new Question
                     {
-                        new AnswerOption { Text = "1", IsCorrect = true },
-                        new AnswerOption { Text = "0", IsCorrect = false },
-                        new AnswerOption { Text = "2", IsCorrect = false },
-                        new AnswerOption { Text = "tan(x)", IsCorrect = false }
+                        Text = "sin^2(x) + cos^2(x) ning qiymati nechaga teng?",
+                        Points = 10,
+                        Options = new List<AnswerOption>
+                        {
+                            new AnswerOption { Text = "1", IsCorrect = true },
+                            new AnswerOption { Text = "0", IsCorrect = false },
+                            new AnswerOption { Text = "2", IsCorrect = false },
+                            new AnswerOption { Text = "tan(x)", IsCorrect = false }
+                        }
                     }
                 }
-            }
-        };
+            };
 
-        dbContext.Tests.AddRange(test1, test2);
-        await dbContext.SaveChangesAsync();
+            dbContext.Tests.AddRange(test1, test2);
+            await dbContext.SaveChangesAsync();
 
-        dbContext.TestTopics.AddRange(
-            new TestTopic { TestId = test1.Id, TopicId = topic1.Id },
-            new TestTopic { TestId = test1.Id, TopicId = topic2.Id },
-            new TestTopic { TestId = test2.Id, TopicId = topic3.Id }
-        );
-        await dbContext.SaveChangesAsync();
+            dbContext.TestTopics.AddRange(
+                new TestTopic { TestId = test1.Id, TopicId = topic1.Id },
+                new TestTopic { TestId = test1.Id, TopicId = topic2.Id },
+                new TestTopic { TestId = test2.Id, TopicId = topic3.Id }
+            );
+            await dbContext.SaveChangesAsync();
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Subject/Topic Seed Warning] {ex.Message}");
     }
 }
 
