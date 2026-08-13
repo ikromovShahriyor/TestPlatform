@@ -117,7 +117,14 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     
     // So'nggi migrations qo'llash
-    await dbContext.Database.MigrateAsync();
+    try
+    {
+        await dbContext.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Migration Notice] {ex.Message}");
+    }
 
     // Ensure new columns exist on Users table if missing
     try
