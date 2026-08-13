@@ -1,23 +1,27 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
     container_name: testplatform-db
     restart: always
     environment:
-      POSTGRES_DB: TestPlatformDb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: SecretPassword123!
+      POSTGRES_DB: ${POSTGRES_DB:-TestPlatformDb}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SecretPassword123!}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d TestPlatformDb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   webapi:
     build:
@@ -26,18 +30,25 @@ services:
     container_name: testplatform-api
     restart: always
     ports:
-      - "5005:5005"
+      # Port 8080 on VPS host mapped to 5005 inside container
+      - "${WEBAPI_PORT:-8080}:5005"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
       - ASPNETCORE_URLS=http://+:5005
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=TestPlatformDb;Username=postgres;Password=SecretPassword123!
-      - Jwt__Key=SuperSecretKeyForTestPlatformAppWithAtLeast256BitsLongKeySecurity!
-      - Jwt__Issuer=TestPlatformIssuer
-      - Jwt__Audience=TestPlatformAudience
-      - Jwt__ExpireInMinutes=1440
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB:-TestPlatformDb};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-SecretPassword123!}
+      - Jwt__Key=${JWT_KEY:-SuperSecretKeyForTestPlatformAppWithAtLeast256BitsLongKeySecurity!}
+      - Jwt__Issuer=${JWT_ISSUER:-TestPlatformIssuer}
+      - Jwt__Audience=${JWT_AUDIENCE:-TestPlatformAudience}
+      - Jwt__ExpireInMinutes=${JWT_EXPIRE_MINUTES:-1440}
     depends_on:
       postgres:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   postgres_data:
+

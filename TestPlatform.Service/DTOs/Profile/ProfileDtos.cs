@@ -9,6 +9,7 @@ public class UserProfileDto
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
+    public string? AvatarUrl { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 
@@ -25,6 +26,8 @@ public class UserProfileUpdateDto
     [MinLength(6, ErrorMessage = "Yangi parol kamida 6 ta belgidan iborat bo'lishi kerak.")]
     [StringLength(100, ErrorMessage = "Yangi parol 100 ta belgidan oshmasligi kerak.")]
     public string? NewPassword { get; set; }
+
+    public string? AvatarUrl { get; set; }
 }
 
 public class UserAttemptHistoryDto

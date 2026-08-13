@@ -55,6 +55,58 @@ public class ProfileController : ControllerBase
         }
     }
 
+    [HttpPost("upload-avatar")]
+    public async Task<IActionResult> UploadAvatar([FromForm] IFormFile file, [FromServices] IWebHostEnvironment env)
+    {
+        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+        {
+            return Unauthorized(new { message = "Foydalanuvchi identifikatori topilmadi." });
+        }
+
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new { message = "Fayl tanlanmagan!" });
+        }
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+        if (!allowedExtensions.Contains(extension))
+        {
+            return BadRequest(new { message = "Faqat rasm fayllari (.jpg, .jpeg, .png, .webp) ruxsat etilgan!" });
+        }
+
+        var uploadsFolder = Path.Combine(env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads", "avatars");
+        if (!Directory.Exists(uploadsFolder))
+        {
+            Directory.CreateDirectory(uploadsFolder);
+        }
+
+        var fileName = $"{userId}_{Guid.NewGuid()}{extension}";
+        var filePath = Path.Combine(uploadsFolder, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var avatarUrl = $"/uploads/avatars/{fileName}";
+
+        var currentProfile = await _profileService.GetProfileAsync(userId);
+        if (currentProfile != null)
+        {
+            await _profileService.UpdateProfileAsync(userId, new UserProfileUpdateDto
+            {
+                FullName = currentProfile.FullName,
+                Email = currentProfile.Email,
+                AvatarUrl = avatarUrl
+            });
+        }
+
+        return Ok(new { avatarUrl, message = "Profil rasmi muvaffaqiyatli yuklandi!" });
+    }
+
     [HttpGet("attempts")]
     public async Task<IActionResult> GetAttemptsAsync()
     {

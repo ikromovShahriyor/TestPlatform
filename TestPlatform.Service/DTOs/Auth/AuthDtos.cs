@@ -3,6 +3,13 @@ using TestPlatform.Domain.Enums;
 
 namespace TestPlatform.Service.DTOs.Auth;
 
+public class SendOtpDto
+{
+    [Required(ErrorMessage = "Email manzil kiritilishi shart.")]
+    [EmailAddress(ErrorMessage = "Email manzili noto'g'ri shaklda.")]
+    public string Email { get; set; } = string.Empty;
+}
+
 public class UserRegisterDto
 {
     [Required(ErrorMessage = "Full name is required.")]
@@ -17,6 +24,10 @@ public class UserRegisterDto
     [Required(ErrorMessage = "Password is required.")]
     [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be between 6 and 100 characters.")]
     public string Password { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Gmail'ga yuborilgan 6 xonali kodni kiriting.")]
+    [StringLength(6, MinimumLength = 6, ErrorMessage = "Tasdiqlash kodi 6 xonali bo'lishi kerak.")]
+    public string Code { get; set; } = string.Empty;
 
     public string Role { get; set; } = "Student";
 }
@@ -43,4 +54,5 @@ public class UserDetailsDto
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
+    public string? AvatarUrl { get; set; }
 }

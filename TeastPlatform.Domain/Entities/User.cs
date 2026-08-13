@@ -19,4 +19,8 @@ public class User : Auditable
     public string PasswordHash { get; set; } = string.Empty;
 
     public UserRole Role { get; set; } = UserRole.Student;
+
+    public string? AvatarUrl { get; set; }
+
+    public bool IsEmailVerified { get; set; } = false;
 }

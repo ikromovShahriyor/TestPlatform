@@ -78,4 +78,64 @@ public class EmailService : IEmailService
             return false;
         }
     }
+
+    public async Task<bool> SendVerificationCodeAsync(string toEmail, string code)
+    {
+        if (string.IsNullOrWhiteSpace(toEmail) || !toEmail.Contains("@"))
+        {
+            _logger.LogWarning($"Email address invalid: '{toEmail}'");
+            return false;
+        }
+
+        try
+        {
+            var host = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
+            var portStr = _configuration["Email:SmtpPort"] ?? "587";
+            var senderEmail = _configuration["Email:SenderEmail"] ?? "no-reply@testplatform.uz";
+            var password = _configuration["Email:SenderPassword"] ?? "";
+
+            // If credentials are not configured in appsettings/env, simulate log sending cleanly
+            if (string.IsNullOrEmpty(password))
+            {
+                _logger.LogInformation($"[Gmail OTP Simulation] To: {toEmail} | Verification Code: {code}");
+                return true;
+            }
+
+            int port = int.TryParse(portStr, out var p) ? p : 587;
+
+            using var message = new MailMessage();
+            message.From = new MailAddress(senderEmail, "TestPlatform Xavfsizlik Xizmati");
+            message.To.Add(new MailAddress(toEmail));
+            message.Subject = $"🔑 TestPlatform Registratsiya Kodingiz: {code}";
+            message.IsBodyHtml = true;
+
+            message.Body = $@"
+                <div style='font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; background-color: #ffffff;'>
+                    <h2 style='color: #4f46e5; text-align: center; margin-bottom: 20px;'>TestPlatform Tasdiqlash Kodi</h2>
+                    <p style='color: #334155; font-size: 15px;'>Assalomu alaykum!</p>
+                    <p style='color: #334155; font-size: 15px;'>TestPlatform tizimida ro'yxatdan o'tish uchun quyidagi 6 xonali tasdiqlash kodidan foydalaning:</p>
+                    
+                    <div style='background: #f1f5f9; border-radius: 8px; padding: 16px; text-align: center; margin: 24px 0;'>
+                        <span style='font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #0f172a;'>{code}</span>
+                    </div>
+
+                    <p style='color: #64748b; font-size: 13px;'>Ushbu kod <b>10 daqiqa</b> davomida amal qiladi. Agar siz ro'yxatdan o'tish so'rovini yubormagan bo'lsangiz, ushbu xabarni e'tiborsiz qoldiring.</p>
+                </div>";
+
+            using var client = new SmtpClient(host, port)
+            {
+                Credentials = new NetworkCredential(senderEmail, password),
+                EnableSsl = true
+            };
+
+            await client.SendMailAsync(message);
+            _logger.LogInformation($"OTP email successfully sent to {toEmail}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to send OTP email to {toEmail}");
+            return false;
+        }
+    }
 }

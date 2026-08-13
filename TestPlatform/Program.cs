@@ -42,7 +42,10 @@ if (!string.IsNullOrWhiteSpace(envDbUrl))
 }
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+{
+    options.UseNpgsql(connectionString);
+    options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+});
 
 // ====== DI (Dependency Injection) QISMI ======
 // Generic Repository-ni ro'yxatdan o'tkazish
@@ -116,32 +119,57 @@ using (var scope = app.Services.CreateScope())
     // So'nggi migrations qo'llash
     await dbContext.Database.MigrateAsync();
 
-    // Default foydalanuvchilarni seed qilish
-    if (!dbContext.Users.Any(u => u.Email == "admin@test.com"))
+    // Ensure new columns exist on Users table if missing
+    try
     {
-        var adminUser = new User
-        {
-            FullName = "Admin User",
-            Email = "admin@test.com",
-            Role = UserRole.Admin
-        };
-        adminUser.PasswordHash = new PasswordHasher<User>().HashPassword(adminUser, "admin123");
-        dbContext.Users.Add(adminUser);
+        await dbContext.Database.ExecuteSqlRawAsync(@"
+            ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""AvatarUrl"" text NULL;
+            ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""IsEmailVerified"" boolean NOT NULL DEFAULT FALSE;
+        ");
     }
+    catch { }
 
-    if (!dbContext.Users.Any(u => u.Email == "student@test.com"))
+    // Default Admin foydalanuvchini seed qilish
+    try
     {
-        var studentUser = new User
+        var adminEmail = "ikromovshahriyor13@gmail.com";
+        var adminUser = dbContext.Users.FirstOrDefault(u => u.Email == adminEmail);
+        if (adminUser == null)
         {
-            FullName = "Student User",
-            Email = "student@test.com",
-            Role = UserRole.Student
-        };
-        studentUser.PasswordHash = new PasswordHasher<User>().HashPassword(studentUser, "123456");
-        dbContext.Users.Add(studentUser);
-    }
+            adminUser = dbContext.Users.FirstOrDefault(u => u.Email == "admin@test.com");
+            if (adminUser != null)
+            {
+                adminUser.Email = adminEmail;
+            }
+            else
+            {
+                adminUser = new User { Email = adminEmail };
+                dbContext.Users.Add(adminUser);
+            }
+        }
+        adminUser.FullName = "Shahriyor Ikromov";
+        adminUser.Role = UserRole.Admin;
+        adminUser.IsEmailVerified = true;
+        adminUser.PasswordHash = new PasswordHasher<User>().HashPassword(adminUser, "Lenovo0909");
 
-    await dbContext.SaveChangesAsync();
+        if (!dbContext.Users.Any(u => u.Email == "student@test.com"))
+        {
+            var studentUser = new User
+            {
+                FullName = "Student User",
+                Email = "student@test.com",
+                Role = UserRole.Student
+            };
+            studentUser.PasswordHash = new PasswordHasher<User>().HashPassword(studentUser, "123456");
+            dbContext.Users.Add(studentUser);
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Seed Warning] {ex.Message}");
+    }
 
     // Default fanlar, topiclar va testlarni seed qilish
     if (!dbContext.Subjects.Any())

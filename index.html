@@ -113,8 +113,17 @@
             <input type="text" id="register-fullname" class="form-input" placeholder="Ali Valiyev" required autocomplete="name">
           </div>
           <div class="form-group">
-            <label class="form-label" for="register-email">Email Manzili *</label>
-            <input type="email" id="register-email" class="form-input" placeholder="ali@gmail.com" required autocomplete="email">
+            <label class="form-label" for="register-email">Email Manzili (Gmail) *</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="email" id="register-email" class="form-input" placeholder="ali@gmail.com" required autocomplete="email" style="flex: 1;">
+              <button type="button" id="btn-send-otp" class="btn btn-secondary" onclick="handleSendOtpClick()" style="white-space: nowrap; font-size: 0.85rem; padding: 0.5rem 0.8rem;">
+                📨 Kod yuborish
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="register-code">Gmail Tasdiqlash Kodi (6-xonali) *</label>
+            <input type="text" id="register-code" class="form-input" placeholder="123456" maxlength="6" required autocomplete="off" style="letter-spacing: 4px; font-weight: bold; font-size: 1.1rem; text-align: center;">
           </div>
           <div class="form-group">
             <label class="form-label" for="register-password">Parol (Kamida 6 ta belgi) *</label>
@@ -623,6 +632,21 @@
         </div>
 
         <div class="card" style="max-width: 600px; padding: 2rem;">
+          <!-- Avatar Section -->
+          <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem;">
+            <div style="position: relative;">
+              <img id="profile-avatar-img" src="https://ui-avatars.com/api/?name=User&background=4f46e5&color=fff&size=100" alt="Avatar" style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary-color);">
+            </div>
+            <div>
+              <h4 style="margin-bottom: 0.3rem;">Profil Rasmingiz</h4>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">.JPG, .PNG yoki .WEBP rasmlarini yuklashingiz mumkin.</p>
+              <label class="btn btn-sm btn-secondary" style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                📷 Rasm Yuklash
+                <input type="file" id="profile-avatar-input" accept="image/*" style="display: none;" onchange="handleAvatarUpload(this)">
+              </label>
+            </div>
+          </div>
+
           <form id="form-update-profile" onsubmit="handleUpdateProfile(event)">
             <div class="form-group">
               <label class="form-label">Ism va Familiya *</label>

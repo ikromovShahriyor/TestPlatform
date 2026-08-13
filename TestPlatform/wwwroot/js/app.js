@@ -119,13 +119,53 @@ async function handleLoginSubmit() {
   }
 }
 
+async function handleSendOtpClick() {
+  const emailEl = document.getElementById('register-email');
+  const codeEl = document.getElementById('register-code');
+  const btnSend = document.getElementById('btn-send-otp');
+
+  if (!emailEl || !emailEl.value.trim() || !emailEl.value.includes('@')) {
+    return alert('Iltimos, to\'g\'ri va to\'liq Gmail manzilingizni kiriting! (Masalan: ali@gmail.com)');
+  }
+
+  try {
+    if (btnSend) {
+      btnSend.disabled = true;
+      btnSend.innerText = '⏳ Yuborilmoqda...';
+    }
+
+    const res = await fetch(`${API_BASE}/auth/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailEl.value.trim() })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Kod yuborishda xatolik!');
+
+    if (data.code && codeEl) {
+      codeEl.value = data.code;
+    }
+
+    alert(`📩 ${data.message}`);
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    if (btnSend) {
+      btnSend.disabled = false;
+      btnSend.innerText = '📨 Kod yuborish';
+    }
+  }
+}
+
 async function handleRegisterSubmit() {
   const fullNameEl = document.getElementById('register-fullname');
   const emailEl = document.getElementById('register-email');
+  const codeEl = document.getElementById('register-code');
   const passwordEl = document.getElementById('register-password');
 
-  if (!fullNameEl || !emailEl || !passwordEl || !fullNameEl.value.trim() || !emailEl.value.trim() || !passwordEl.value.trim()) {
-    return alert('Barcha maydonlarni to\'ldiring!');
+  if (!fullNameEl || !emailEl || !codeEl || !passwordEl || !fullNameEl.value.trim() || !emailEl.value.trim() || !codeEl.value.trim() || !passwordEl.value.trim()) {
+    return alert('Barcha maydonlarni, shu jumladan Gmail tasdiqlash kodini to\'ldiring!');
   }
 
   try {
@@ -135,6 +175,7 @@ async function handleRegisterSubmit() {
       body: JSON.stringify({
         fullName: fullNameEl.value.trim(),
         email: emailEl.value.trim(),
+        code: codeEl.value.trim(),
         password: passwordEl.value,
         role: 'Student'
       })
@@ -147,7 +188,8 @@ async function handleRegisterSubmit() {
     currentUser = {
       name: data.user.fullName,
       email: data.user.email,
-      role: data.user.role
+      role: data.user.role,
+      avatarUrl: data.user.avatarUrl
     };
 
     localStorage.setItem('tp_token', token);
@@ -2098,8 +2140,94 @@ document.addEventListener('DOMContentLoaded', () => {
   applyUserSession();
 });
 
+async function loadStudentProfile() {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/profile`);
+    if (!res.ok) return;
+    const profile = await res.json();
+
+    const nameEl = document.getElementById('profile-fullname');
+    const emailEl = document.getElementById('profile-email');
+    const avatarImg = document.getElementById('profile-avatar-img');
+
+    if (nameEl) nameEl.value = profile.fullName;
+    if (emailEl) emailEl.value = profile.email;
+    if (avatarImg) {
+      if (profile.avatarUrl) {
+        avatarImg.src = profile.avatarUrl;
+      } else {
+        avatarImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.fullName)}&background=4f46e5&color=fff&size=100`;
+      }
+    }
+  } catch (err) {
+    console.error('Profile loading error:', err);
+  }
+}
+
+async function handleAvatarUpload(input) {
+  if (!input || !input.files || input.files.length === 0) return;
+
+  const file = input.files[0];
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/profile/upload-avatar`, {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Avatar yuklashda xatolik!');
+
+    const avatarImg = document.getElementById('profile-avatar-img');
+    if (avatarImg) avatarImg.src = data.avatarUrl;
+
+    if (currentUser) {
+      currentUser.avatarUrl = data.avatarUrl;
+      localStorage.setItem('tp_user', JSON.stringify(currentUser));
+    }
+
+    alert('Profil rasmi muvaffaqiyatli yuklandi! 📸');
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function handleUpdateProfile(e) {
+  if (e) e.preventDefault();
+
+  const fullName = document.getElementById('profile-fullname')?.value.trim();
+  const email = document.getElementById('profile-email')?.value.trim();
+  const newPassword = document.getElementById('profile-newpassword')?.value;
+
+  if (!fullName || !email) return alert('Ism va emailni to\'ldiring!');
+
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/profile`, {
+      method: 'PUT',
+      body: JSON.stringify({ fullName, email, newPassword: newPassword || null })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Profilni yangilashda xatolik!');
+
+    if (currentUser) {
+      currentUser.name = data.fullName;
+      currentUser.email = data.email;
+      localStorage.setItem('tp_user', JSON.stringify(currentUser));
+    }
+
+    applyUserSession();
+    alert('Profil ma\'lumotlari yangilandi! 💾');
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
 // Bind globally for inline onclick handlers
 window.switchAuthTab = switchAuthTab;
+window.handleSendOtpClick = handleSendOtpClick;
 window.handleLoginSubmit = handleLoginSubmit;
 window.handleRegisterSubmit = handleRegisterSubmit;
 window.logout = logout;
@@ -2139,6 +2267,7 @@ window.changeTestPage = changeTestPage;
 window.handleStudentTestFilterChange = handleStudentTestFilterChange;
 window.changeStudentTestPage = changeStudentTestPage;
 window.loadStudentProfile = loadStudentProfile;
+window.handleAvatarUpload = handleAvatarUpload;
 window.handleUpdateProfile = handleUpdateProfile;
 window.loadStudentAttempts = loadStudentAttempts;
 window.openReviewForAttempt = openReviewForAttempt;

@@ -15,13 +15,46 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly IJwtService _jwtService;
+    private readonly IEmailService _emailService;
+    private readonly IConfiguration _configuration;
     private readonly PasswordHasher<User> _passwordHasher;
 
-    public AuthController(AppDbContext context, IJwtService jwtService)
+    // In-memory thread-safe OTP store (Email -> (Code, ExpirationTime))
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (string Code, DateTime ExpiresAt)> _otpStore 
+        = new System.Collections.Concurrent.ConcurrentDictionary<string, (string Code, DateTime ExpiresAt)>(StringComparer.OrdinalIgnoreCase);
+
+    public AuthController(AppDbContext context, IJwtService jwtService, IEmailService emailService, IConfiguration configuration)
     {
         _context = context;
         _jwtService = jwtService;
+        _emailService = emailService;
+        _configuration = configuration;
         _passwordHasher = new PasswordHasher<User>();
+    }
+
+    [HttpPost("send-otp")]
+    public async Task<IActionResult> SendOtp([FromBody] SendOtpDto dto)
+    {
+        if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
+        {
+            return BadRequest(new { message = "Ushbu email allaqachon ro'yxatdan o'tgan!" });
+        }
+
+        var randomCode = new Random().Next(100000, 999999).ToString();
+        var expiresAt = DateTime.UtcNow.AddMinutes(10);
+
+        _otpStore[dto.Email] = (randomCode, expiresAt);
+
+        await _emailService.SendVerificationCodeAsync(dto.Email, randomCode);
+
+        var hasSmtpPassword = !string.IsNullOrWhiteSpace(_configuration["Email:SenderPassword"]);
+
+        return Ok(new 
+        { 
+            message = hasSmtpPassword ? "Tasdiqlash kodi kiritilgan Gmail manzilga yuborildi!" : $"[Test Rejimi] Kodingiz: {randomCode} (Gmail paroli sozlanmagani uchun ekranga chiqarildi)", 
+            email = dto.Email,
+            code = hasSmtpPassword ? null : randomCode
+        });
     }
 
     [HttpPost("register")]
@@ -32,11 +65,26 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Email allaqachon ro'yxatdan o'tgan!" });
         }
 
+        // Verify OTP Code
+        if (!_otpStore.TryGetValue(dto.Email, out var otpData) || otpData.ExpiresAt < DateTime.UtcNow)
+        {
+            return BadRequest(new { message = "Tasdiqlash kodi muddati o'tgan yoki yuborilmagan! Qaytadan kod so'rang." });
+        }
+
+        if (otpData.Code != dto.Code.Trim())
+        {
+            return BadRequest(new { message = "Gmail tasdiqlash kodi noto'g'ri kiritildi!" });
+        }
+
+        // Remove OTP code after successful verification
+        _otpStore.TryRemove(dto.Email, out _);
+
         var user = new User
         {
             FullName = dto.FullName,
             Email = dto.Email,
-            Role = UserRole.Student
+            Role = UserRole.Student,
+            IsEmailVerified = true
         };
         user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
 
@@ -53,7 +101,8 @@ public class AuthController : ControllerBase
                 Id = user.Id,
                 FullName = user.FullName,
                 Email = user.Email,
-                Role = user.Role.ToString()
+                Role = user.Role.ToString(),
+                AvatarUrl = user.AvatarUrl
             }
         });
     }
@@ -83,7 +132,8 @@ public class AuthController : ControllerBase
                 Id = user.Id,
                 FullName = user.FullName,
                 Email = user.Email,
-                Role = user.Role.ToString()
+                Role = user.Role.ToString(),
+                AvatarUrl = user.AvatarUrl
             }
         });
     }

@@ -33,6 +33,7 @@ public class ProfileService : IProfileService
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.ToString(),
+            AvatarUrl = user.AvatarUrl,
             CreatedAt = user.CreatedAt
         };
     }
@@ -50,6 +51,11 @@ public class ProfileService : IProfileService
         user.FullName = dto.FullName.Trim();
         user.Email = dto.Email.Trim();
 
+        if (!string.IsNullOrWhiteSpace(dto.AvatarUrl))
+        {
+            user.AvatarUrl = dto.AvatarUrl;
+        }
+
         if (!string.IsNullOrWhiteSpace(dto.NewPassword))
         {
             user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
@@ -63,6 +69,7 @@ public class ProfileService : IProfileService
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.ToString(),
+            AvatarUrl = user.AvatarUrl,
             CreatedAt = user.CreatedAt
         };
     }
