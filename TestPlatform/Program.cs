@@ -124,6 +124,11 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         Console.WriteLine($"[Migration Notice] {ex.Message}");
+        try
+        {
+            await dbContext.Database.EnsureCreatedAsync();
+        }
+        catch { }
     }
 
     // Ensure new columns exist on Users table if missing
