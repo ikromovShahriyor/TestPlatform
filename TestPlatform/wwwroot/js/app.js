@@ -101,9 +101,9 @@ async function handleLoginSubmit() {
 
     const text = await res.text();
     let data = {};
-    try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text || 'Serverda xatolik yuz berdi' }; }
+    try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text || `Server xatoligi (Status: ${res.status})` }; }
 
-    if (!res.ok) throw new Error(data.message || 'Kirishda xatolik yuz berdi!');
+    if (!res.ok) throw new Error(data.message || `Kirishda xatolik yuz berdi! (Status: ${res.status})`);
 
     token = data.token;
     currentUser = {
