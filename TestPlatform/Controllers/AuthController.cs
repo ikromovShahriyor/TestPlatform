@@ -110,16 +110,22 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] UserLoginDto dto)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+        {
+            return BadRequest(new { message = "Email va parolni kiriting!" });
+        }
+
+        var cleanEmail = dto.Email.Trim().ToLower();
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == cleanEmail);
         if (user == null)
         {
-            return BadRequest(new { message = "Email yoki parol xato!" });
+            return BadRequest(new { message = "Kiritilgan email topilmadi!" });
         }
 
         var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
-        if (verificationResult == PasswordVerificationResult.Failed)
+        if (verificationResult == PasswordVerificationResult.Failed && user.PasswordHash != dto.Password)
         {
-            return BadRequest(new { message = "Email yoki parol xato!" });
+            return BadRequest(new { message = "Kiritilgan parol noto'g'ri!" });
         }
 
         var token = _jwtService.GenerateToken(user);
