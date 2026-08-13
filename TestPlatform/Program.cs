@@ -126,18 +126,33 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         Console.WriteLine($"[Migration Notice] {ex.Message}");
+    }
+
+    // Direct check: Users jadvali mavjudligini tekshirish. Agar yo'q bo'lsa majburiy yaratish!
+    try
+    {
+        await dbContext.Database.ExecuteSqlRawAsync(@"SELECT 1 FROM ""Users"" LIMIT 1;");
+    }
+    catch
+    {
         try
         {
-            var creator = dbContext.Database.GetService<IRelationalDatabaseCreator>();
-            if (creator != null)
-            {
-                await creator.CreateTablesAsync();
-            }
+            var createScript = dbContext.Database.GenerateCreateScript();
+            await dbContext.Database.ExecuteSqlRawAsync(createScript);
+            Console.WriteLine("[Database] Barcha jadvallar GenerateCreateScript orqali yaratildi!");
         }
-        catch (Exception ex2)
+        catch (Exception scriptEx)
         {
-            Console.WriteLine($"[CreateTables Notice] {ex2.Message}");
-            try { await dbContext.Database.EnsureCreatedAsync(); } catch { }
+            Console.WriteLine($"[GenerateCreateScript Notice] {scriptEx.Message}");
+            try
+            {
+                var creator = dbContext.Database.GetService<IRelationalDatabaseCreator>();
+                if (creator != null)
+                {
+                    await creator.CreateTablesAsync();
+                }
+            }
+            catch { }
         }
     }
 
