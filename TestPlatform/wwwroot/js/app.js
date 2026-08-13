@@ -302,19 +302,19 @@ async function loadDashboardStats() {
       fetchWithAuth(`${API_BASE}/dashboard/recent-attempts?count=5`)
     ]);
 
-    const summary = await summaryRes.json();
-    const topTests = await topRes.json();
-    const recentAttempts = await recentRes.json();
+    const summary = summaryRes.ok ? await summaryRes.json().catch(() => ({})) : {};
+    const topTests = topRes.ok ? await topRes.json().catch(() => ([])) : [];
+    const recentAttempts = recentRes.ok ? await recentRes.json().catch(() => ([])) : [];
 
     // Populate summary
-    document.getElementById('dashboard-subjects-count').innerText = summary.subjectsCount;
-    document.getElementById('dashboard-tests-count').innerText = summary.testsCount;
-    document.getElementById('dashboard-published-count').innerText = summary.publishedTestsCount;
-    document.getElementById('dashboard-questions-count').innerText = summary.questionsCount;
-    document.getElementById('dashboard-attempts-count').innerText = summary.attemptsCount;
-    document.getElementById('dashboard-avg-percentage').innerText = `${summary.averagePercentage}%`;
-    document.getElementById('dashboard-passed-count').innerText = summary.passedAttemptsCount;
-    document.getElementById('dashboard-failed-count').innerText = summary.failedAttemptsCount;
+    if (document.getElementById('dashboard-subjects-count')) document.getElementById('dashboard-subjects-count').innerText = summary.subjectsCount ?? 0;
+    if (document.getElementById('dashboard-tests-count')) document.getElementById('dashboard-tests-count').innerText = summary.testsCount ?? 0;
+    if (document.getElementById('dashboard-published-count')) document.getElementById('dashboard-published-count').innerText = summary.publishedTestsCount ?? 0;
+    if (document.getElementById('dashboard-questions-count')) document.getElementById('dashboard-questions-count').innerText = summary.questionsCount ?? 0;
+    if (document.getElementById('dashboard-attempts-count')) document.getElementById('dashboard-attempts-count').innerText = summary.attemptsCount ?? 0;
+    if (document.getElementById('dashboard-avg-percentage')) document.getElementById('dashboard-avg-percentage').innerText = `${summary.averagePercentage ?? 0}%`;
+    if (document.getElementById('dashboard-passed-count')) document.getElementById('dashboard-passed-count').innerText = summary.passedAttemptsCount ?? 0;
+    if (document.getElementById('dashboard-failed-count')) document.getElementById('dashboard-failed-count').innerText = summary.failedAttemptsCount ?? 0;
 
     // Populate recent attempts
     const recentTbody = document.getElementById('dashboard-recent-tbody');
@@ -370,9 +370,10 @@ function switchAdminTab(tabName) {
   const btnTests = document.getElementById('atab-btn-tests');
   const btnResults = document.getElementById('atab-btn-results');
   const btnLeaderboard = document.getElementById('atab-btn-leaderboard');
+  const btnUsers = document.getElementById('atab-btn-users');
   const btnAudit = document.getElementById('atab-btn-auditlogs');
 
-  [btnDash, btnSub, btnTopics, btnTests, btnResults, btnLeaderboard, btnAudit].forEach(btn => btn?.classList.remove('active'));
+  [btnDash, btnSub, btnTopics, btnTests, btnResults, btnLeaderboard, btnUsers, btnAudit].forEach(btn => btn?.classList.remove('active'));
 
   if (tabName === 'dashboard') {
     const tabEl = document.getElementById('admin-tab-dashboard');
@@ -406,6 +407,11 @@ function switchAdminTab(tabName) {
     if (tabEl) tabEl.style.display = 'block';
     btnLeaderboard?.classList.add('active');
     loadAdminLeaderboardTab();
+  } else if (tabName === 'users') {
+    const tabEl = document.getElementById('admin-tab-users');
+    if (tabEl) tabEl.style.display = 'block';
+    btnUsers?.classList.add('active');
+    loadAdminUsers();
   } else if (tabName === 'auditlogs') {
     const tabEl = document.getElementById('admin-tab-auditlogs');
     if (tabEl) tabEl.style.display = 'block';
@@ -1325,8 +1331,10 @@ async function loadStudentAvailableTests() {
 
     console.log('Loading student tests from:', url);
     const res = await fetchWithAuth(url);
-    console.log('Response status:', res.status);
-    const data = await res.json();
+    const text = await res.text().catch(() => '');
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+    if (!res.ok) throw new Error(data.message || `Testlarni yuklashda xatolik (${res.status})`);
     console.log('Tests data:', data);
     
     studentTestsPageState.totalPages = data.totalPages || 1;
@@ -2290,3 +2298,104 @@ window.openCertificate = openCertificate;
 window.openCertificateFromCurrentAttempt = openCertificateFromCurrentAttempt;
 window.downloadCurrentCertificate = downloadCurrentCertificate;
 window.handleVerifyCertificate = handleVerifyCertificate;
+
+// ==================== USERS MANAGEMENT (ADMIN) ====================
+
+let usersPageState = {
+  page: 1,
+  pageSize: 10,
+  search: '',
+  totalPages: 1
+};
+
+async function loadAdminUsers() {
+  const tbody = document.getElementById('admin-users-tbody');
+  if (!tbody) return;
+
+  const searchEl = document.getElementById('users-filter-search');
+  if (searchEl) usersPageState.search = searchEl.value.trim();
+
+  try {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Yuklanmoqda...</td></tr>';
+
+    const url = `${API_BASE}/users?page=${usersPageState.page}&pageSize=${usersPageState.pageSize}&search=${encodeURIComponent(usersPageState.search)}`;
+    const res = await fetchWithAuth(url);
+    const text = await res.text().catch(() => '');
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+
+    if (!res.ok) throw new Error(data.message || 'Foydalanuvchilarni yuklashda xatolik!');
+
+    usersPageState.totalPages = data.totalPages || 1;
+    const pageInfo = document.getElementById('users-page-info');
+    if (pageInfo) pageInfo.innerText = `Sahifa ${usersPageState.page} / ${usersPageState.totalPages}`;
+
+    const prevBtn = document.getElementById('users-prev-btn');
+    const nextBtn = document.getElementById('users-next-btn');
+    if (prevBtn) prevBtn.disabled = usersPageState.page <= 1;
+    if (nextBtn) nextBtn.disabled = usersPageState.page >= usersPageState.totalPages;
+
+    const users = data.items || [];
+    if (users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Foydalanuvchilar topilmadi</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = users.map(u => {
+      const createdDate = u.createdAt ? new Date(u.createdAt).toLocaleString('uz-UZ') : '-';
+      const roleBadge = u.role === 'Admin' ? 
+        '<span class="badge-status-passed" style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 4px 8px; border-radius: 4px;">ADMIN</span>' : 
+        '<span class="badge-status-failed" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 4px 8px; border-radius: 4px;">TALABA</span>';
+
+      return `
+        <tr>
+          <td><strong>${escapeHtml(u.fullName || '-')}</strong></td>
+          <td>${escapeHtml(u.email || '-')}</td>
+          <td>${roleBadge}</td>
+          <td>${createdDate}</td>
+          <td><span class="badge-attempts">${u.attemptsCount || 0} ta</span></td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}', '${escapeHtml(u.fullName || u.email)}')">
+              🗑️ O'chirish
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state" style="color: #ef4444;">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function deleteUser(userId, userName) {
+  if (!confirm(`Haqiqatan ham '${userName}' foydalanuvchisini o'chirishni tasdiqlaysizmi? Bu amal qaytarib bo'lmaydi!`)) {
+    return;
+  }
+
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/users/${userId}`, { method: 'DELETE' });
+    const text = await res.text().catch(() => '');
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+
+    if (!res.ok) throw new Error(data.message || 'Foydalanuvchini o\'chirishda xatolik!');
+
+    alert(data.message || 'Foydalanuvchi muvaffaqiyatli o\'chirildi!');
+    loadAdminUsers();
+    loadDashboardStats();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function changeUsersPage(delta) {
+  const newPage = usersPageState.page + delta;
+  if (newPage >= 1 && newPage <= usersPageState.totalPages) {
+    usersPageState.page = newPage;
+    loadAdminUsers();
+  }
+}
+
+window.loadAdminUsers = loadAdminUsers;
+window.deleteUser = deleteUser;
+window.changeUsersPage = changeUsersPage;

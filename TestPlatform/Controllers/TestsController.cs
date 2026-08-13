@@ -73,6 +73,7 @@ public class TestsController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAllAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, [FromQuery] Guid? subjectId = null, [FromQuery] string? difficulty = null, [FromQuery] Guid? topicId = null)
     {
         // Students see only published, Admins see all
@@ -83,6 +84,7 @@ public class TestsController : ControllerBase
 
     // Secure endpoint for student quiz taking (randomized questions and options, answers hidden)
     [HttpGet("/api/student-tests/{id:guid}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetForStudentAsync([FromRoute] Guid id)
     {
         try

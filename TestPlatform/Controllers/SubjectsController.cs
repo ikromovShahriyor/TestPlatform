@@ -26,6 +26,7 @@ public class SubjectsController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAllAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
     {
         var results = await _subjectService.GetAllAsync(page, pageSize, search);
@@ -33,6 +34,7 @@ public class SubjectsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetByIdAsync([FromRoute] Guid id)
     {
         var result = await _subjectService.GetByIdAsync(id);

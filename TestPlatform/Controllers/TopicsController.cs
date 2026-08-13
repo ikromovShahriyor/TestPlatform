@@ -20,6 +20,7 @@ public class TopicsController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAllAsync()
     {
         var result = await _topicService.GetAllAsync();
@@ -27,6 +28,7 @@ public class TopicsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetByIdAsync([FromRoute] Guid id)
     {
         var result = await _topicService.GetByIdAsync(id);

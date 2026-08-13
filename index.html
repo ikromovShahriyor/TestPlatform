@@ -175,6 +175,9 @@
         <button id="atab-btn-leaderboard" class="admin-subtab-btn" onclick="switchAdminTab('leaderboard')">
           🏆 Leaderboard
         </button>
+        <button id="atab-btn-users" class="admin-subtab-btn" onclick="switchAdminTab('users')">
+          👥 Foydalanuvchilar
+        </button>
         <button id="atab-btn-auditlogs" class="admin-subtab-btn" onclick="switchAdminTab('auditlogs')">
           📜 Audit Loglar
         </button>
@@ -469,6 +472,41 @@
           <button class="btn btn-secondary btn-sm" id="audit-prev-btn" onclick="changeAuditPage(-1)">← Oldingi</button>
           <span id="audit-page-info">Sahifa 1 / 1</span>
           <button class="btn btn-secondary btn-sm" id="audit-next-btn" onclick="changeAuditPage(1)">Keyingi →</button>
+        </div>
+      </section>
+
+      <!-- Admin Tab: Foydalanuvchilar -->
+      <section id="admin-tab-users" class="admin-tab-content" style="display: none;">
+        <div class="filter-card" style="margin-bottom: 1.5rem; padding: 1.2rem;">
+          <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 250px;">
+              <input type="text" id="users-filter-search" class="form-input" placeholder="🔍 Ism yoki email bo'yicha qidirish..." oninput="loadAdminUsers()">
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Ism va Sharifi</th>
+                <th>Email Manzili</th>
+                <th>Roli</th>
+                <th>Ro'yxatdan O'tgan Sana</th>
+                <th>Urinishlar Soni</th>
+                <th>Harakatlar</th>
+              </tr>
+            </thead>
+            <tbody id="admin-users-tbody">
+              <!-- JS fills user rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination-container" id="users-pagination">
+          <button class="btn btn-secondary btn-sm" id="users-prev-btn" onclick="changeUsersPage(-1)">← Oldingi</button>
+          <span id="users-page-info">Sahifa 1 / 1</span>
+          <button class="btn btn-secondary btn-sm" id="users-next-btn" onclick="changeUsersPage(1)">Keyingi →</button>
         </div>
       </section>
 
