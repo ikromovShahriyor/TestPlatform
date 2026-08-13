@@ -99,7 +99,10 @@ async function handleLoginSubmit() {
       })
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text || 'Serverda xatolik yuz berdi' }; }
+
     if (!res.ok) throw new Error(data.message || 'Kirishda xatolik yuz berdi!');
 
     token = data.token;
