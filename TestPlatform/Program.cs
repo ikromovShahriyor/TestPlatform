@@ -360,4 +360,38 @@ app.UseAuthentication(); // ⬅️ JWT authentication check
 app.UseAuthorization();
 app.MapControllers();
 
+app.MapGet("/api/health", async (AppDbContext dbContext) =>
+{
+    try
+    {
+        var canConnect = await dbContext.Database.CanConnectAsync();
+        if (!canConnect)
+        {
+            return Results.Json(new { status = "Error", dbConnected = false, message = "PostgreSQL bazasiga ulanib bo'lmadi!" }, statusCode: 500);
+        }
+
+        var usersCount = 0;
+        var usersTableExists = false;
+        try
+        {
+            usersCount = await dbContext.Users.CountAsync();
+            usersTableExists = true;
+        }
+        catch { }
+
+        return Results.Ok(new
+        {
+            status = "Healthy",
+            dbConnected = true,
+            usersTableExists = usersTableExists,
+            usersCount = usersCount,
+            message = "PostgreSQL bazasi ulanishi 100% muvaffaqiyatli ishlayapti!"
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { status = "Error", dbConnected = false, message = ex.Message }, statusCode: 500);
+    }
+});
+
 app.Run();
