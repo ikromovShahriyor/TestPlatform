@@ -7,16 +7,14 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-TestPlatformDb}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SecretPassword123!}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
     logging:
       driver: "json-file"
       options:
@@ -51,4 +49,5 @@ services:
 
 volumes:
   postgres_data:
+    name: testplatform_v2_postgres_data
 
