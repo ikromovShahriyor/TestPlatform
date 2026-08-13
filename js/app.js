@@ -140,7 +140,10 @@ async function handleSendOtpClick() {
       body: JSON.stringify({ email: emailEl.value.trim() })
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    let data = {};
+    try { data = JSON.parse(text); } catch { data = { message: text || 'Serverda xatolik yuz berdi' }; }
+
     if (!res.ok) throw new Error(data.message || 'Kod yuborishda xatolik!');
 
     if (data.code && codeEl) {
