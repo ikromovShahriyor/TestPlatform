@@ -10,6 +10,8 @@ using System.Text;
 using TestPlatform.Domain.Entities;
 using TestPlatform.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -116,7 +118,7 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     
-    // So'nggi migrations qo'llash
+    // So'nggi migrations qo'llash yoki jadvallarni avtomatik yaratish
     try
     {
         await dbContext.Database.MigrateAsync();
@@ -126,9 +128,17 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"[Migration Notice] {ex.Message}");
         try
         {
-            await dbContext.Database.EnsureCreatedAsync();
+            var creator = dbContext.Database.GetService<IRelationalDatabaseCreator>();
+            if (creator != null)
+            {
+                await creator.CreateTablesAsync();
+            }
         }
-        catch { }
+        catch (Exception ex2)
+        {
+            Console.WriteLine($"[CreateTables Notice] {ex2.Message}");
+            try { await dbContext.Database.EnsureCreatedAsync(); } catch { }
+        }
     }
 
     // Ensure new columns exist on Users table if missing
